@@ -1,6 +1,9 @@
 import express from 'express'
 import cors from 'cors';
 import bodyparser from 'body-parser'
+import dotenv from 'dotenv'
+
+dotenv.config();
 
 const app = express()
 const port = 3000
@@ -18,7 +21,7 @@ import 'firebase/compat/firestore';
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDcwlOmF9HIk3_24aKNHkJjT6FPQiwy2Mo",
+  apiKey: process.env.FIREBASE_API_KEY,
   authDomain: "hacker-s-portal.firebaseapp.com",
   projectId: "hacker-s-portal",
   storageBucket: "hacker-s-portal.appspot.com",
@@ -60,8 +63,14 @@ app.get('/user', async(req, res) => {
 app.get('/userpoints:slug', async(req, res) => {
   const data = ((req.params.slug).split(':'))[1];
   const snapshot = await db.collection('users').doc(data).get();
-  const data2 = await (snapshot.data()).points;
-  res.json({"points": data2})
+  if(snapshot.data()){
+    const data2 = await (snapshot.data()).points;
+    res.json({"points": data2})
+  }
+  else{
+    res.json({"points": 0})
+  }
+  
 })
 
 app.post('/form:slug', async(req, res) => {
@@ -145,22 +154,32 @@ app.get('/chkusr:slug:sec', async(req, res) => {
   
     const collection = db.collection('users');
     const snapshot = await collection.doc(data).get();
+  if(snapshot.data()){
     const data2 = await (snapshot.data()).hackathons;
-    for(var i = 0;i<data2.length;i++){
-    if(data2[i] == ((req.params.sec).split(':'))[0]){
+    for (var i = 0; i < data2.length; i++) {
+      if (data2[i] == ((req.params.sec).split(':'))[0]) {
+
+        vad = 1;
+        break
+
+      }
       
-      vad = 1;
-      break
 
     }
-    
+  }
+  else{
+    vad = 2;
   }
     if(vad == 1){
       res.json({"value":'1'});
     }
+    else if(vad == 2){
+      res.json({"value":'2'});
+    }
     else{
       res.json({"value":'0'});
     }
+    
 })
 
 app.get('/teaminfo:slug', async (req, res) => {
