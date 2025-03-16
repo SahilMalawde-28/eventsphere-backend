@@ -1,14 +1,15 @@
-import express from 'express';
+import express from 'express'
 import cors from 'cors';
-import dotenv from 'dotenv';
+import bodyparser from 'body-parser'
+import dotenv from 'dotenv'
 
+// const sqlite3 = require("sqlite3").verbose();
 dotenv.config();
 
-const app = express();
-const port = process.env.PORT || 3000;
+const app = express()
+const port = 3000
 
-app.use(express.json());
-app.use(cors());
+app.use(bodyparser.json())
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
