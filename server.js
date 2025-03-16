@@ -13,7 +13,11 @@ const app = express()
 const port = 3000
 
 app.use(bodyparser.json())
-app.use(cors())
+app.use(cors({
+  origin: "*", // Replace with your frontend URL if needed
+  methods: "GET, POST, OPTIONS",
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
