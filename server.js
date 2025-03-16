@@ -1,116 +1,218 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-// const sqlite3 = require("sqlite3").verbose();
-const bodyParser = require("body-parser");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+import express from 'express'
+import cors from 'cors';
+import bodyparser from 'body-parser'
+import dotenv from 'dotenv'
 
-const app = express();
-const PORT = 5000;
+dotenv.config();
 
-app.use(cors()); // Allow all origins
-app.use(bodyParser.json());
+const app = express()
+const port = 3000
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+app.use(bodyparser.json())
+app.use(cors())
 
-const db = new sqlite3.Database(":memory:", (err) => {
-  if (err) {
-      console.error("Error creating in-memory database:", err.message);
-  } else {
-      console.log("🚀 Virtual Database Ready!");
+
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: "hacker-s-portal.firebaseapp.com",
+  projectId: "hacker-s-portal",
+  storageBucket: "hacker-s-portal.appspot.com",
+  messagingSenderId: "848457459024",
+  appId: "1:848457459024:web:7ed2c2dcd7624d39a03855",
+  measurementId: "G-3D11Q02VRT"
+};
+
+// Initialize Firebase
+
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const db = firebaseApp.firestore();
+
+
+
+
+
+
+
+
+app.get('/', async(req, res) => {
+    const data = [];
+    const snapshot = await db.collection('hackathons').get();
+    snapshot.forEach(doc =>{
+        data.push({"id":doc.id,"data":doc.data()})
+    })
+    res.json(data)
+})
+
+app.get('/user', async(req, res) => {
+  const data = [];
+  const snapshot = await db.collection('users').get();
+  snapshot.forEach(doc =>{
+      data.push({"id":doc.id,"data":doc.data()})
+  })
+  res.json(data)
+})
+
+app.get('/userpoints:slug', async(req, res) => {
+  const data = ((req.params.slug).split(':'))[1];
+  const snapshot = await db.collection('users').doc(data).get();
+  if(snapshot.data()){
+    const data2 = await (snapshot.data()).points;
+    res.json({"points": data2})
+  }
+  else{
+    res.json({"points": 0})
+  }
+  
+})
+
+app.post('/form:slug', async(req, res) => {
+    const data = req.body;
+    const collection = db.collection('hackathons');
+    const doc = collection.doc(((req.params.slug).split(':'))[1]);
+    await doc.collection('teams').doc(data.teamname).set({"teamname":data.teamname,"leader":data.leader,"members":[],"project":data.project,"idea":data.idea,"feedback":"","position":'',"link":""})
+
+    const collection2 = db.collection('users');
+    const doc2 = collection2.doc(data.leader)
+    
+    const snapshot = await doc2.get()
+    const data2 = (snapshot.data()).hackathons;
+    data2.push(((req.params.slug).split(':'))[1])
+    
+
+    await doc2.update({
+      hackathons : data2,
+    })
+    res.send('success')
+
+})
+
+app.post('/user', async(req, res) => {
+  const data = req.body;
+    const collection2 = db.collection('users');
+    const doc2 = collection2.doc(data.name)
+    await doc2.set({
+      hackathons : [],
+      points:0,
+    })
+    res.send('success')
+
+})
+
+app.post('/add', async(req, res) => {
+  const data = req.body;
+  // data - name teamname id
+    const collection = db.collection('hackathons');
+    const doc = collection.doc(data.id);
+    const team = await doc.collection('teams').doc(data.teamname).get()
+    const members = team.data().members;
+    members.push(data.name);
+    await doc.collection('teams').doc(data.teamname).update({
+      members : members,
+    })
+
+    const collection2 = db.collection('users');
+    const doc2 = collection2.doc(data.name)
+    
+    const snapshot = await doc2.get()
+    const data2 = (snapshot.data()).hackathons;
+    data2.push(data.id)
+    
+
+    await doc2.update({
+      hackathons : data2,
+    })
+    res.send('success')
+
+})
+
+app.post('/sub', async(req, res) => {
+  const data = req.body;
+  // data - name teamname id
+    const collection = db.collection('hackathons');
+    const doc = collection.doc(data.id);
+    await doc.collection('teams').doc(data.teamname).update(
+      {
+        'link':data.link
+      }
+    )
+    
+    res.send('success');
+})
+
+
+app.get('/chkusr:slug:sec', async(req, res) => {
+  const data = ((req.params.sec).split(':'))[1];
+  var vad = 0;
+  
+    const collection = db.collection('users');
+    const snapshot = await collection.doc(data).get();
+  if(snapshot.data()){
+    const data2 = await (snapshot.data()).hackathons;
+    for (var i = 0; i < data2.length; i++) {
+      if (data2[i] == ((req.params.sec).split(':'))[0]) {
+
+        vad = 1;
+        break
+
+      }
+      
+
+    }
+  }
+  else{
+    vad = 2;
+  }
+    if(vad == 1){
+      res.json({"value":'1'});
+    }
+    else if(vad == 2){
+      res.json({"value":'2'});
+    }
+    else{
+      res.json({"value":'0'});
+    }
+    
+})
+
+app.get('/teaminfo:slug', async (req, res) => {
+  try {
+    const name = ((req.params.slug).split(':'))[1];
+    const collection = db.collection('hackathons');
+    const snap = await collection.get();
+
+    const promises = snap.docs.map(async (hackathon) => {
+      const doc2 = db.collection('hackathons').doc(hackathon.id);
+      const snapshot = await doc2.collection('teams').get();
+
+      return snapshot.docs
+        .filter(doc => ((name === doc.data().leader) || (name === doc.data().members.filter(member =>name === member)[0])))
+        .map(doc => ({
+          id: hackathon.data().title,
+          h_id: hackathon.id,
+          data: doc.data()
+        }));
+    });
+
+    const results = await Promise.all(promises);
+    const data = results.flat(); // Flatten the array of arrays
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error fetching team info:", error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// ✅ Test route (Ensure API is working)
-app.get("/", (req, res) => {
-  res.json({ message: "Server is running!" });
-});
-
-// ✅ Route to Execute SQL Commands
-// app.post("/execute-sql", (req, res) => {
-//     const prompt = req.body.prompt.trim();
-  
-//     db.run(prompt, function (err) {
-//       if (err) {
-//         return res.status(400).json({ error: err.message });
-//       }
-  
-//       // ✅ Extract Table Name for CREATE TABLE
-//       const match = prompt.match(/create table (\w+)/i);
-//       if (match) {
-//         const tableName = match[1];
-  
-//         db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
-//           if (err) {
-//             return res.status(500).json({ error: "Table created, but failed to fetch schema." });
-//           }
-//           res.json({ 
-//             message: "Table created successfully!", 
-//             tableName: tableName, // ✅ Return table name
-//             schema: columns       // ✅ Return schema details
-//           });
-//         });
-//       } else {
-//         res.json({ message: "SQL Executed Successfully!", changes: this.changes });
-//       }
-//     });
-//   });
-  
-  
-
-// // ✅ Route to Fetch Current Table Data
-// app.post("/get-table", (req, res) => {
-//     const prompt = req.body.prompt.trim();
-
-//     // ✅ Extract table name from SELECT query
-//     const match = prompt.match(/from\s+(\w+)/i);
-//     if (!match) {
-//         return res.status(400).json({ error: "Invalid SELECT query. No table name found." });
-//     }
-
-//     const tableName = match[1];
-
-//     // ✅ Fetch column names
-//     db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
-//         if (err) {
-//             return res.status(500).json({ error: err.message });
-//         }
-
-//         const columnNames = columns.map(col => col.name); // ✅ Extract column names
-
-//         // ✅ Fetch table data
-//         db.all(prompt, [], (err, rows) => {
-//             if (err) {
-//                 return res.status(500).json({ error: err.message });
-//             }
-
-//             res.json({
-//                 message: "Table data fetched successfully!",
-//                 tableName: tableName,
-//                 columns: columnNames,  // ✅ Send column names
-//                 data: rows.map(row => Object.values(row)) // ✅ Convert rows to array format
-//             });
-//         });
-//     });
-// });
 
 
-
-// app.post("/generate-sql", async (req, res) => {
-//     const userPrompt = req.body.prompt;
-//     const userSchema = req.body.schema;
-//     const schemaString = JSON.stringify(userSchema);
-
-//     try {
-//         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-//         const result = await model.generateContent(`Convert this to SQL code the schema of the table is ${schemaString} no need of any explanation just the code in a single line without extra new lines to directly use in raw: ${userPrompt}`);
-//         const sqlQuery = result.response.candidates[0].content.parts[0].text;
-
-//         res.json({ sql: sqlQuery.trim() });
-//     } catch (error) {
-//         res.status(500).json({ error: "Failed to generate SQL", details: error.message });
-//     }
-// });
-
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
-
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
