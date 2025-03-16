@@ -3,8 +3,10 @@ import cors from 'cors';
 import bodyparser from 'body-parser'
 import dotenv from 'dotenv'
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import sqlite3 from "sqlite3";
 
-// const sqlite3 = require("sqlite3").verbose();
+
+
 dotenv.config();
 
 const app = express()
@@ -15,9 +17,18 @@ app.use(bodyparser.json())
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+const { verbose } = sqlite3;
+const db = new sqlite3.Database(":memory:", (err) => {
+  if (err) {
+      console.error("Error creating in-memory database:", err.message);
+  } else {
+      console.log("🚀 Virtual Database Ready!");
+  }
+});
+
 app.get("/", (req, res) => {
   
-  
+
   if (!process.env.GEMINI_API_KEY) {
     res.json({ message: "Server is not running!" });
   } else {
@@ -41,6 +52,73 @@ app.post("/generate-sql", async (req, res) => {
   } catch (error) {
       res.status(500).json({ error: "Failed to generate SQL", details: error.message });
   }
+});
+
+app.post("/execute-sql", (req, res) => {
+  const prompt = req.body.prompt.trim();
+
+  db.run(prompt, function (err) {
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    // ✅ Extract Table Name for CREATE TABLE
+    const match = prompt.match(/create table (\w+)/i);
+    if (match) {
+      const tableName = match[1];
+
+      db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
+        if (err) {
+          return res.status(500).json({ error: "Table created, but failed to fetch schema." });
+        }
+        res.json({ 
+          message: "Table created successfully!", 
+          tableName: tableName, // ✅ Return table name
+          schema: columns       // ✅ Return schema details
+        });
+      });
+    } else {
+      res.json({ message: "SQL Executed Successfully!", changes: this.changes });
+    }
+  });
+});
+
+
+
+// ✅ Route to Fetch Current Table Data
+app.post("/get-table", (req, res) => {
+  const prompt = req.body.prompt.trim();
+
+  // ✅ Extract table name from SELECT query
+  const match = prompt.match(/from\s+(\w+)/i);
+  if (!match) {
+      return res.status(400).json({ error: "Invalid SELECT query. No table name found." });
+  }
+
+  const tableName = match[1];
+
+  // ✅ Fetch column names
+  db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
+      if (err) {
+          return res.status(500).json({ error: err.message });
+      }
+
+      const columnNames = columns.map(col => col.name); // ✅ Extract column names
+
+      // ✅ Fetch table data
+      db.all(prompt, [], (err, rows) => {
+          if (err) {
+              return res.status(500).json({ error: err.message });
+          }
+
+          res.json({
+              message: "Table data fetched successfully!",
+              tableName: tableName,
+              columns: columnNames,  // ✅ Send column names
+              data: rows.map(row => Object.values(row)) // ✅ Convert rows to array format
+          });
+      });
+  });
 });
 
 
