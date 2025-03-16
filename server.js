@@ -17,14 +17,7 @@ app.use(bodyparser.json())
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const { verbose } = sqlite3;
-const db = new sqlite3.Database(":memory:", (err) => {
-  if (err) {
-      console.error("Error creating in-memory database:", err.message);
-  } else {
-      console.log("🚀 Virtual Database Ready!");
-  }
-});
+
 
 app.get("/", (req, res) => {
   
