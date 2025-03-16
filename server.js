@@ -15,13 +15,14 @@ app.use(bodyparser.json())
 // const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.get("/", (req, res) => {
-  res.json({ message: "Server is running!" });
+  
   
   if (!process.env.GEMINI_API_KEY) {
     console.log("❌ GEMINI_API_KEY is MISSING!");
   } else {
     console.log("✅ GEMINI_API_KEY is SET");
   }
+  res.json({ message: "Server is running!" });
 });
 
 // app.post("/generate-sql", async (req, res) => {
