@@ -13,7 +13,7 @@ const app = express()
 const port = 3000
 
 app.use(bodyparser.json())
-
+app.use(cors())
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
