@@ -16,6 +16,8 @@ app.use(bodyparser.json())
 
 app.get("/", (req, res) => {
   res.json({ message: "Server is running!" });
+  console.log("🔹 GEMINI_API_KEY:", process.env.GEMINI_API_KEY);
+
 });
 
 // app.post("/generate-sql", async (req, res) => {
