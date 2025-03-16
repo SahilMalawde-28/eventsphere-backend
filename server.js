@@ -18,11 +18,11 @@ app.get("/", (req, res) => {
   
   
   if (!process.env.GEMINI_API_KEY) {
-    console.log("❌ GEMINI_API_KEY is MISSING!");
+    res.json({ message: "Server is not running!" });
   } else {
-    console.log("✅ GEMINI_API_KEY is SET");
+    res.json({ message: "Server is running!" });
   }
-  res.json({ message: "Server is running!" });
+  
 });
 
 // app.post("/generate-sql", async (req, res) => {
