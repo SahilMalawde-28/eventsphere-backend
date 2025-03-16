@@ -18,9 +18,9 @@ app.get("/", (req, res) => {
   
   
   if (!process.env.GEMINI_API_KEY) {
-    res.json({ message: "Server is not running!" });
-  } else {
     res.json({ message: "Server is running!" });
+  } else {
+    res.json({ message: "Server is not running!" });
   }
   
 });
