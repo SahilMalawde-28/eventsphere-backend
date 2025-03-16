@@ -16,8 +16,12 @@ app.use(bodyparser.json())
 
 app.get("/", (req, res) => {
   res.json({ message: "Server is running!" });
-  console.log("🔹 GEMINI_API_KEY:", process.env.GEMINI_API_KEY);
-
+  
+  if (!process.env.GEMINI_API_KEY) {
+    console.log("❌ GEMINI_API_KEY is MISSING!");
+  } else {
+    console.log("✅ GEMINI_API_KEY is SET");
+  }
 });
 
 // app.post("/generate-sql", async (req, res) => {
