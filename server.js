@@ -26,27 +26,23 @@ app.get("/", (req, res) => {
   
 });
 
-// app.post("/generate-sql", async (req, res) => {
-//   const { prompt, schema } = req.body;
 
-//   if (!prompt || !schema) {
-//     return res.status(400).json({ error: "Missing required fields: prompt and schema" });
-//   }
+app.post("/generate-sql", async (req, res) => {
+  const userPrompt = req.body.prompt;
+  const userSchema = req.body.schema;
+  const schemaString = JSON.stringify(userSchema);
 
-//   try {
-//     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-//     const result = await model.generateContent(
-//       `Convert this to SQL code the schema of the table is ${JSON.stringify(schema)}. 
-//       No need of any explanation, just return SQL in a single line: ${prompt}`
-//     );
+  try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent(`Convert this to SQL code the schema of the table is ${schemaString} no need of any explanation just the code in a single line without extra new lines to directly use in raw: ${userPrompt}`);
+      const sqlQuery = result.response.candidates[0].content.parts[0].text;
 
-//     const sqlQuery = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text || "Error generating SQL";
-//     res.json({ sql: sqlQuery.trim() });
-//   } catch (error) {
-//     console.error("Error generating SQL:", error);
-//     res.status(500).json({ error: "Failed to generate SQL", details: error.message });
-//   }
-// });
+      res.json({ sql: sqlQuery.trim() });
+  } catch (error) {
+      res.status(500).json({ error: "Failed to generate SQL", details: error.message });
+  }
+});
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
