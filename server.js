@@ -21,7 +21,12 @@ app.use(cors({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.sendStatus(204);
+});
 
 app.get("/", (req, res) => {
   
