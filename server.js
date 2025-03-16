@@ -3,7 +3,7 @@ import cors from 'cors';
 import bodyparser from 'body-parser'
 import dotenv from 'dotenv'
 
-const sqlite3 = require("sqlite3").verbose();
+// const sqlite3 = require("sqlite3").verbose();
 dotenv.config();
 
 const app = express()
