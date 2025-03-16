@@ -2,9 +2,8 @@ import express from 'express'
 import cors from 'cors';
 import bodyparser from 'body-parser'
 import dotenv from 'dotenv'
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+const sqlite3 = require("sqlite3").verbose();
 dotenv.config();
 
 const app = express()
@@ -13,6 +12,8 @@ const port = 3000
 app.use(bodyparser.json())
 app.use(cors())
 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.get("/", (req, res) => {
   res.json({ message: "Server is running!" });
