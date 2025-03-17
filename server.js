@@ -3,7 +3,7 @@ import cors from 'cors';
 import bodyparser from 'body-parser'
 import dotenv from 'dotenv'
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
+import sqlite3 from "sqlite3";
 
 
 
@@ -20,6 +20,14 @@ app.use(cors({
 }));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const db = new sqlite3.verbose().Database(":memory:", (err) => {
+  if (err) {
+      console.error("Error creating in-memory database:", err.message);
+  } else {
+      console.log("🚀 Virtual Database Ready!");
+  }
+});
 
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
