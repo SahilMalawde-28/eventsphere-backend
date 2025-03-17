@@ -21,13 +21,7 @@ app.use(cors({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const db = new sqlite3.Database(":memory:", (err) => {
-  if (err) {
-      console.error("Error creating in-memory database:", err.message);
-  } else {
-      console.log("🚀 Virtual Database Ready!");
-  }
-});
+
 
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
