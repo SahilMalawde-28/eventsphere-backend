@@ -63,19 +63,19 @@ app.post("/execute-sql", async (req, res) => {
   const prompt = req.body.prompt.trim();
 
   try {
-      await connection.none(prompt); // Execute the SQL command
+      await connection.query(prompt); // Execute the SQL command
 
       const match = prompt.match(/create table (\w+)/i);
       if (match) {
           const tableName = match[1];
 
-          // ✅ Correct way to get schema in pg-mem
-          // const schema = connection.describe(tableName);
+          // ✅ Get table schema correctly
+          const schema = connection.getSchema().getTable(tableName);
 
           res.json({
               message: "Table created successfully!",
               tableName: tableName,
-              // schema: schema.columns.map(col => col.name) // Extract column names
+              schema: schema.getColumns().map(col => col.name) // Extract column names
           });
       } else {
           res.json({ message: "SQL Executed Successfully!" });
@@ -96,21 +96,22 @@ app.post("/get-table", async (req, res) => {
   const tableName = match[1];
 
   try {
-      // ✅ Correct way to fetch schema
-      // const schema = connection.describe(tableName);
+      // ✅ Get table schema correctly
+      const schema = connection.getSchema().getTable(tableName);
 
-      const rows = connection.many(prompt);
+      const rows = connection.query(prompt);
 
       res.json({
           message: "Table data fetched successfully!",
           tableName: tableName,
-          // columns: schema.columns.map(col => col.name), // Extract column names
+          columns: schema.getColumns().map(col => col.name), // Extract column names
           data: rows.map(row => Object.values(row)) // Convert rows to array format
       });
   } catch (error) {
       res.status(500).json({ error: error.message });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
