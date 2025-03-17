@@ -62,7 +62,7 @@ app.post("/generate-sql", async (req, res) => {
 app.post("/execute-sql", async (req, res) => {
   try {
     const prompt = req.body.prompt.trim();
-    await pg.none(prompt); 
+    await pg.query(prompt); 
 
     const match = prompt.match(/create table (\w+)/i);
     if (match) {
@@ -108,7 +108,7 @@ app.post("/get-table", async (req, res) => {
     const schemaResult = await pg.manyOrNone(schemaQuery, [tableName]);
     const columnNames = schemaResult.map(row => row.column_name);
 
-    const tableData = await pg.manyOrNone(prompt);
+    const tableData = await pg.query(prompt);
     res.json({
       message: "Table data fetched successfully!",
       tableName: tableName,
