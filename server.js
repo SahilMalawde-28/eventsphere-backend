@@ -63,16 +63,24 @@ app.post("/execute-sql", async (req, res) => {
   const prompt = req.body.prompt.trim();
 
   try {
-      await connection.none(prompt); 
+      await connection.none(prompt); // Execute the SQL command
 
       const match = prompt.match(/create table (\w+)/i);
       if (match) {
           const tableName = match[1];
-          const columns = connection.getTable(tableName).getSchema().fields;
+
+          // ✅ Get column details properly from pg-mem
+          const table = connection.tables[tableName];
+          if (!table) {
+              return res.status(400).json({ error: "Table creation failed!" });
+          }
+
+          const columns = Object.keys(table.selection); // Extract column names
+
           res.json({
               message: "Table created successfully!",
               tableName: tableName,
-              schema: columns.map(col => col.name)
+              schema: columns
           });
       } else {
           res.json({ message: "SQL Executed Successfully!" });
@@ -93,13 +101,19 @@ app.post("/get-table", async (req, res) => {
   const tableName = match[1];
 
   try {
-      const columns = connection.getTable(tableName).getSchema().fields;
+      // ✅ Fetch table metadata properly
+      const table = connection.tables[tableName];
+      if (!table) {
+          return res.status(404).json({ error: "Table not found!" });
+      }
+
+      const columns = Object.keys(table.selection);
       const rows = connection.many(prompt);
 
       res.json({
           message: "Table data fetched successfully!",
           tableName: tableName,
-          columns: columns.map(col => col.name),
+          columns: columns,
           data: rows.map(row => Object.values(row))
       });
   } catch (error) {
