@@ -70,12 +70,16 @@ app.post("/execute-sql", async (req, res) => {
           const tableName = match[1];
 
           // ✅ Get table schema correctly
-          const schema = connection.getSchema().getTable(tableName);
+          const table = connection.tables.get(tableName);
+
+          if (!table) {
+              return res.status(500).json({ error: "Table created, but schema retrieval failed." });
+          }
 
           res.json({
               message: "Table created successfully!",
               tableName: tableName,
-              schema: schema.getColumns().map(col => col.name) // Extract column names
+              schema: table.getColumns().map(col => col.name) // Extract column names
           });
       } else {
           res.json({ message: "SQL Executed Successfully!" });
@@ -97,20 +101,25 @@ app.post("/get-table", async (req, res) => {
 
   try {
       // ✅ Get table schema correctly
-      const schema = connection.getSchema().getTable(tableName);
+      const table = connection.tables.get(tableName);
+
+      if (!table) {
+          return res.status(500).json({ error: "Table does not exist." });
+      }
 
       const rows = connection.query(prompt);
 
       res.json({
           message: "Table data fetched successfully!",
           tableName: tableName,
-          columns: schema.getColumns().map(col => col.name), // Extract column names
+          columns: table.getColumns().map(col => col.name), // Extract column names
           data: rows.map(row => Object.values(row)) // Convert rows to array format
       });
   } catch (error) {
       res.status(500).json({ error: error.message });
   }
 });
+
 
 
 app.listen(port, () => {
