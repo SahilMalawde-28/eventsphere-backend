@@ -22,7 +22,7 @@ app.use(cors({
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const db = newDb();
-const pg = db.adapters.createPg();
+const connection = db.public;
 
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -60,63 +60,50 @@ app.post("/generate-sql", async (req, res) => {
 });
 
 app.post("/execute-sql", async (req, res) => {
+  const prompt = req.body.prompt.trim();
+
   try {
-    const prompt = req.body.prompt.trim();
-    await pg.query(prompt); 
+      await connection.none(prompt); 
 
-    const match = prompt.match(/create table (\w+)/i);
-    if (match) {
-      const tableName = match[1];
-
-      const schemaQuery = `
-        SELECT column_name, data_type 
-        FROM information_schema.columns 
-        WHERE table_schema = 'public' AND table_name = $1;
-      `;
-
-      const schemaResult = await pg.manyOrNone(schemaQuery, [tableName]);
-
-      return res.json({
-        message: "Table created successfully!",
-        tableName: tableName,
-        schema: schemaResult,
-      });
-    } else {
-      return res.json({ message: "SQL Executed Successfully!" });
-    }
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+      const match = prompt.match(/create table (\w+)/i);
+      if (match) {
+          const tableName = match[1];
+          const columns = connection.getTable(tableName).getSchema().fields;
+          res.json({
+              message: "Table created successfully!",
+              tableName: tableName,
+              schema: columns.map(col => col.name)
+          });
+      } else {
+          res.json({ message: "SQL Executed Successfully!" });
+      }
+  } catch (error) {
+      res.status(400).json({ error: error.message });
   }
 });
 
-
 app.post("/get-table", async (req, res) => {
-  try {
-    const prompt = req.body.prompt.trim();
-    const match = prompt.match(/from\s+(\w+)/i);
-    if (!match) {
+  const prompt = req.body.prompt.trim();
+
+  const match = prompt.match(/from\s+(\w+)/i);
+  if (!match) {
       return res.status(400).json({ error: "Invalid SELECT query. No table name found." });
-    }
+  }
 
-    const tableName = match[1];
+  const tableName = match[1];
 
-    const schemaQuery = `
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_schema = 'public' AND table_name = $1;
-    `;
-    const schemaResult = await pg.manyOrNone(schemaQuery, [tableName]);
-    const columnNames = schemaResult.map(row => row.column_name);
+  try {
+      const columns = connection.getTable(tableName).getSchema().fields;
+      const rows = connection.many(prompt);
 
-    const tableData = await pg.query(prompt);
-    res.json({
-      message: "Table data fetched successfully!",
-      tableName: tableName,
-      columns: columnNames,
-      data: tableData.map(row => Object.values(row)),
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+      res.json({
+          message: "Table data fetched successfully!",
+          tableName: tableName,
+          columns: columns.map(col => col.name),
+          data: rows.map(row => Object.values(row))
+      });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
   }
 });
 
