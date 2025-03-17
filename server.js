@@ -70,12 +70,12 @@ app.post("/execute-sql", async (req, res) => {
           const tableName = match[1];
 
           // ✅ Correct way to get schema in pg-mem
-          const schema = connection.describe(tableName);
+          // const schema = connection.describe(tableName);
 
           res.json({
               message: "Table created successfully!",
               tableName: tableName,
-              schema: schema.columns.map(col => col.name) // Extract column names
+              // schema: schema.columns.map(col => col.name) // Extract column names
           });
       } else {
           res.json({ message: "SQL Executed Successfully!" });
@@ -97,14 +97,14 @@ app.post("/get-table", async (req, res) => {
 
   try {
       // ✅ Correct way to fetch schema
-      const schema = connection.describe(tableName);
+      // const schema = connection.describe(tableName);
 
       const rows = connection.many(prompt);
 
       res.json({
           message: "Table data fetched successfully!",
           tableName: tableName,
-          columns: schema.columns.map(col => col.name), // Extract column names
+          // columns: schema.columns.map(col => col.name), // Extract column names
           data: rows.map(row => Object.values(row)) // Convert rows to array format
       });
   } catch (error) {
