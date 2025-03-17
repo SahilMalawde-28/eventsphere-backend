@@ -3,7 +3,7 @@ import cors from 'cors';
 import bodyparser from 'body-parser'
 import dotenv from 'dotenv'
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import Database from "better-sqlite3";
+import { newDb } from "pg-mem";
 
 
 
@@ -21,7 +21,7 @@ app.use(cors({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-
+const db = newDb();
 
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -57,39 +57,6 @@ app.post("/generate-sql", async (req, res) => {
       res.status(500).json({ error: "Failed to generate SQL", details: error.message });
   }
 });
-
-
-// app.post("/execute-sql", (req, res) => {
-//   try {
-//     const prompt = req.body.prompt.trim();
-    
-//     const stmt = db.prepare(prompt);
-//     stmt.run();
-
-//     const match = prompt.match(/create table (\w+)/i);
-//     if (match) {
-//       const tableName = match[1];
-//       const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
-
-//       return res.json({ 
-//         message: "Table created successfully!", 
-//         tableName: tableName, 
-//         schema: columns
-//       });
-//     }
-
-//     res.json({ message: "SQL Executed Successfully!" });
-//   } catch (err) {
-//     res.status(400).json({ error: err.message });
-//   }
-// });
-
-
-
-
-// ✅ Route to Fetch Current Table Data
-
-
 
 
 
