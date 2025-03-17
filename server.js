@@ -3,7 +3,7 @@ import cors from 'cors';
 import bodyparser from 'body-parser'
 import dotenv from 'dotenv'
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
+import Database from "better-sqlite3";
 
 
 
