@@ -59,30 +59,30 @@ app.post("/generate-sql", async (req, res) => {
 });
 
 
-app.post("/execute-sql", (req, res) => {
-  try {
-    const prompt = req.body.prompt.trim();
+// app.post("/execute-sql", (req, res) => {
+//   try {
+//     const prompt = req.body.prompt.trim();
     
-    const stmt = db.prepare(prompt);
-    stmt.run();
+//     const stmt = db.prepare(prompt);
+//     stmt.run();
 
-    const match = prompt.match(/create table (\w+)/i);
-    if (match) {
-      const tableName = match[1];
-      const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
+//     const match = prompt.match(/create table (\w+)/i);
+//     if (match) {
+//       const tableName = match[1];
+//       const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
 
-      return res.json({ 
-        message: "Table created successfully!", 
-        tableName: tableName, 
-        schema: columns
-      });
-    }
+//       return res.json({ 
+//         message: "Table created successfully!", 
+//         tableName: tableName, 
+//         schema: columns
+//       });
+//     }
 
-    res.json({ message: "SQL Executed Successfully!" });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+//     res.json({ message: "SQL Executed Successfully!" });
+//   } catch (err) {
+//     res.status(400).json({ error: err.message });
+//   }
+// });
 
 
 
