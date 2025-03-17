@@ -63,23 +63,19 @@ app.post("/execute-sql", async (req, res) => {
   const prompt = req.body.prompt.trim();
 
   try {
-      await connection.query(prompt); // Execute the SQL command
+      await connection.none(prompt); // Execute the SQL command
 
       const match = prompt.match(/create table (\w+)/i);
       if (match) {
           const tableName = match[1];
 
-          // ✅ Get table schema correctly
-          const table = connection.tables.get(tableName);
-
-          if (!table) {
-              return res.status(500).json({ error: "Table created, but schema retrieval failed." });
-          }
+          // ✅ Correct way to get schema in pg-mem
+          // const schema = connection.describe(tableName);
 
           res.json({
               message: "Table created successfully!",
               tableName: tableName,
-              schema: table.getColumns().map(col => col.name) // Extract column names
+              // schema: schema.columns.map(col => col.name) // Extract column names
           });
       } else {
           res.json({ message: "SQL Executed Successfully!" });
@@ -100,27 +96,21 @@ app.post("/get-table", async (req, res) => {
   const tableName = match[1];
 
   try {
-      // ✅ Get table schema correctly
-      const table = connection.tables.get(tableName);
+      // ✅ Correct way to fetch schema
+      // const schema = connection.describe(tableName);
 
-      if (!table) {
-          return res.status(500).json({ error: "Table does not exist." });
-      }
-
-      const rows = connection.query(prompt);
+      const rows = connection.many(prompt);
 
       res.json({
           message: "Table data fetched successfully!",
           tableName: tableName,
-          columns: table.getColumns().map(col => col.name), // Extract column names
+          // columns: schema.columns.map(col => col.name), // Extract column names
           data: rows.map(row => Object.values(row)) // Convert rows to array format
       });
   } catch (error) {
       res.status(500).json({ error: error.message });
   }
 });
-
-
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
