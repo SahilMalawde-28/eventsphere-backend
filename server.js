@@ -22,6 +22,7 @@ app.use(cors({
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const db = newDb();
+const pg = db.adapters.createPg();
 
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -58,7 +59,66 @@ app.post("/generate-sql", async (req, res) => {
   }
 });
 
+app.post("/execute-sql", async (req, res) => {
+  try {
+    const prompt = req.body.prompt.trim();
+    await pg.none(prompt); 
 
+    const match = prompt.match(/create table (\w+)/i);
+    if (match) {
+      const tableName = match[1];
+
+      const schemaQuery = `
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = $1;
+      `;
+
+      const schemaResult = await pg.manyOrNone(schemaQuery, [tableName]);
+
+      return res.json({
+        message: "Table created successfully!",
+        tableName: tableName,
+        schema: schemaResult,
+      });
+    } else {
+      return res.json({ message: "SQL Executed Successfully!" });
+    }
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
+app.post("/get-table", async (req, res) => {
+  try {
+    const prompt = req.body.prompt.trim();
+    const match = prompt.match(/from\s+(\w+)/i);
+    if (!match) {
+      return res.status(400).json({ error: "Invalid SELECT query. No table name found." });
+    }
+
+    const tableName = match[1];
+
+    const schemaQuery = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_schema = 'public' AND table_name = $1;
+    `;
+    const schemaResult = await pg.manyOrNone(schemaQuery, [tableName]);
+    const columnNames = schemaResult.map(row => row.column_name);
+
+    const tableData = await pg.manyOrNone(prompt);
+    res.json({
+      message: "Table data fetched successfully!",
+      tableName: tableName,
+      columns: columnNames,
+      data: tableData.map(row => Object.values(row)),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
