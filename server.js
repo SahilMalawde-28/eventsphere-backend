@@ -58,72 +58,37 @@ app.post("/generate-sql", async (req, res) => {
   }
 });
 
+
 app.post("/execute-sql", (req, res) => {
-  const prompt = req.body.prompt.trim();
+  try {
+    const prompt = req.body.prompt.trim();
+    
+    const stmt = db.prepare(prompt);
+    stmt.run();
 
-  db.run(prompt, function (err) {
-    if (err) {
-      return res.status(400).json({ error: err.message });
-    }
-
-    // ✅ Extract Table Name for CREATE TABLE
     const match = prompt.match(/create table (\w+)/i);
     if (match) {
       const tableName = match[1];
+      const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
 
-      db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
-        if (err) {
-          return res.status(500).json({ error: "Table created, but failed to fetch schema." });
-        }
-        res.json({ 
-          message: "Table created successfully!", 
-          tableName: tableName, // ✅ Return table name
-          schema: columns       // ✅ Return schema details
-        });
+      return res.json({ 
+        message: "Table created successfully!", 
+        tableName: tableName, 
+        schema: columns
       });
-    } else {
-      res.json({ message: "SQL Executed Successfully!", changes: this.changes });
     }
-  });
+
+    res.json({ message: "SQL Executed Successfully!" });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
+
 
 
 
 // ✅ Route to Fetch Current Table Data
-app.post("/get-table", (req, res) => {
-  const prompt = req.body.prompt.trim();
 
-  // ✅ Extract table name from SELECT query
-  const match = prompt.match(/from\s+(\w+)/i);
-  if (!match) {
-      return res.status(400).json({ error: "Invalid SELECT query. No table name found." });
-  }
-
-  const tableName = match[1];
-
-  // ✅ Fetch column names
-  db.all(`PRAGMA table_info(${tableName})`, [], (err, columns) => {
-      if (err) {
-          return res.status(500).json({ error: err.message });
-      }
-
-      const columnNames = columns.map(col => col.name); // ✅ Extract column names
-
-      // ✅ Fetch table data
-      db.all(prompt, [], (err, rows) => {
-          if (err) {
-              return res.status(500).json({ error: err.message });
-          }
-
-          res.json({
-              message: "Table data fetched successfully!",
-              tableName: tableName,
-              columns: columnNames,  // ✅ Send column names
-              data: rows.map(row => Object.values(row)) // ✅ Convert rows to array format
-          });
-      });
-  });
-});
 
 
 
