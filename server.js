@@ -21,7 +21,7 @@ app.use(cors({
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const db = new Database(":memory:");
+const db = new Database("database.db", { verbose: console.log });
 
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
