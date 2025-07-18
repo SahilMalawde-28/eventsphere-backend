@@ -11,7 +11,10 @@ const app = express();
 const port = 3000;
 
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+  origin: "https://s-querrel-j6ki.vercel.app"
+}));
+
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
